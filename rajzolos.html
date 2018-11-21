@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+  <style>
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    background: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  canvas {
+    border: 1px solid white;
+  }
+  </style>
+</head>
+<body>
+<canvas width="400" height="400" id="game"></canvas>
+<script>
+var canvas = document.getElementById('game');
+var context = canvas.getContext('2d');
+
+var grid = 16;
+  
+var snake = {
+  x: 160,
+  y: 160
+};
+
+var blocks = [];
+
+function saveBlock() {
+    blocks.unshift([snake.x, snake.y]);
+}
+
+function drawPixel(color, x, y) {
+  context.fillStyle = color;
+  context.fillRect(x, y, grid-1, grid-1);  
+
+}
+
+// game loop
+function loop() {
+  requestAnimationFrame(loop);
+
+  context.clearRect(0,0,canvas.width,canvas.height);
+
+  blocks.forEach(i => drawPixel('yellow', i[0], i[1]));
+  drawPixel('green', snake.x, snake.y);  
+}
+
+// listen to keyboard events to move the snake
+document.addEventListener('keydown', function(e) {
+  // from   https://stackoverflow.com/a/7479403
+  var key;
+  var isShift;
+  if (window.event) {
+    key = window.event.keyCode;
+    isShift = !!window.event.shiftKey; // typecast to boolean
+  } else {
+    key = ev.which;
+    isShift = !!ev.shiftKey;
+  }
+
+  // left arrow key
+  if (key === 37) {
+    if (isShift) {
+        saveBlock();
+    }
+    snake.x -= grid;
+  }
+  // up arrow key
+  else if (key === 38) {
+    if (isShift) {
+        saveBlock();
+    }
+    snake.y -= grid;
+  }
+  // right arrow key
+  else if (key === 39) {
+    if (isShift) {
+        saveBlock();
+    }
+    snake.x += grid;
+  }
+  // down arrow key
+  else if (key === 40) {
+    if (isShift) {
+        saveBlock();
+    }
+    snake.y += grid;
+  }
+});
+
+// start the game
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
