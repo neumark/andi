@@ -34,9 +34,17 @@ var cursor = {
 
 var blocks = {};
 
+function xorBlock(x, y, color) {
+  setBlock(x, y, getBlock(x, y) != null ? null : color);
+}
+
+function getBlock(x, y) {
+  return (blocks[x] || {})[y];
+}
+
 function setBlock(x, y, color) {
-    blocks[x] = (blocks[x] || {});
-    blocks[x][y] = color;
+  blocks[x] = (blocks[x] || {});
+  blocks[x][y] = color;
 }
 
 function drawPixel(x, y, color) {
@@ -51,8 +59,13 @@ function loop() {
   cursor.x = Math.max(0, Math.min(cursor.x, canvas.width - grid));
   cursor.y = Math.max(0, Math.min(cursor.y, canvas.height - grid));
   context.clearRect(0,0,canvas.width,canvas.height);
-
-  Object.keys(blocks).forEach(x => Object.keys(blocks[x]).forEach(y => drawPixel(x, y, blocks[x][y])));
+  Object.keys(blocks).forEach(
+	  x => Object.keys(blocks[x]).forEach(
+		  y => {
+			if (blocks[x][y]) {
+				drawPixel(x, y, blocks[x][y]);
+			}
+		  }));
   drawPixel(cursor.x, cursor.y, 'green');  
 }
 
@@ -71,7 +84,7 @@ document.addEventListener('keydown', function(e) {
 
   // shift key
   if (key === 16) {
-      setBlock(cursor.x, cursor.y, 'yellow');
+      xorBlock(cursor.x, cursor.y, 'yellow');
   }
 
   // left arrow key
