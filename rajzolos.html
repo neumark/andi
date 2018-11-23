@@ -32,13 +32,14 @@ var cursor = {
   y: 160
 };
 
-var blocks = [];
+var blocks = {};
 
-function saveBlock() {
-    blocks.unshift([cursor.x, cursor.y]);
+function setBlock(x, y, color) {
+    blocks[x] = (blocks[x] || {});
+    blocks[x][y] = color;
 }
 
-function drawPixel(color, x, y) {
+function drawPixel(x, y, color) {
   context.fillStyle = color;
   context.fillRect(x, y, grid-1, grid-1);  
 
@@ -51,8 +52,8 @@ function loop() {
   cursor.y = Math.max(0, Math.min(cursor.y, canvas.height - grid));
   context.clearRect(0,0,canvas.width,canvas.height);
 
-  blocks.forEach(i => drawPixel('yellow', i[0], i[1]));
-  drawPixel('green', cursor.x, cursor.y);  
+  Object.keys(blocks).forEach(x => Object.keys(blocks[x]).forEach(y => drawPixel(x, y, blocks[x][y])));
+  drawPixel(cursor.x, cursor.y, 'green');  
 }
 
 // listen to keyboard events to move the cursor
@@ -70,34 +71,34 @@ document.addEventListener('keydown', function(e) {
 
   // shift key
   if (key === 16) {
-      saveBlock();
+      setBlock(cursor.x, cursor.y, 'yellow');
   }
 
   // left arrow key
   if (key === 37) {
     if (isShift) {
-        saveBlock();
+      setBlock(cursor.x, cursor.y, 'yellow');
     }
     cursor.x -= grid;
   }
   // up arrow key
   else if (key === 38) {
     if (isShift) {
-        saveBlock();
+      setBlock(cursor.x, cursor.y, 'yellow');
     }
     cursor.y -= grid;
   }
   // right arrow key
   else if (key === 39) {
     if (isShift) {
-        saveBlock();
+      setBlock(cursor.x, cursor.y, 'yellow');
     }
     cursor.x += grid;
   }
   // down arrow key
   else if (key === 40) {
     if (isShift) {
-        saveBlock();
+      setBlock(cursor.x, cursor.y, 'yellow');
     }
     cursor.y += grid;
   }
