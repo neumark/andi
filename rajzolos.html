@@ -27,7 +27,7 @@ var context = canvas.getContext('2d');
 
 var grid = 16;
   
-var snake = {
+var cursor = {
   x: 160,
   y: 160
 };
@@ -35,7 +35,7 @@ var snake = {
 var blocks = [];
 
 function saveBlock() {
-    blocks.unshift([snake.x, snake.y]);
+    blocks.unshift([cursor.x, cursor.y]);
 }
 
 function drawPixel(color, x, y) {
@@ -47,14 +47,15 @@ function drawPixel(color, x, y) {
 // game loop
 function loop() {
   requestAnimationFrame(loop);
-
+  cursor.x = Math.max(0, Math.min(cursor.x, canvas.width - grid));
+  cursor.y = Math.max(0, Math.min(cursor.y, canvas.height - grid));
   context.clearRect(0,0,canvas.width,canvas.height);
 
   blocks.forEach(i => drawPixel('yellow', i[0], i[1]));
-  drawPixel('green', snake.x, snake.y);  
+  drawPixel('green', cursor.x, cursor.y);  
 }
 
-// listen to keyboard events to move the snake
+// listen to keyboard events to move the cursor
 document.addEventListener('keydown', function(e) {
   // from   https://stackoverflow.com/a/7479403
   var key;
@@ -67,33 +68,38 @@ document.addEventListener('keydown', function(e) {
     isShift = !!ev.shiftKey;
   }
 
+  // shift key
+  if (key === 16) {
+      saveBlock();
+  }
+
   // left arrow key
   if (key === 37) {
     if (isShift) {
         saveBlock();
     }
-    snake.x -= grid;
+    cursor.x -= grid;
   }
   // up arrow key
   else if (key === 38) {
     if (isShift) {
         saveBlock();
     }
-    snake.y -= grid;
+    cursor.y -= grid;
   }
   // right arrow key
   else if (key === 39) {
     if (isShift) {
         saveBlock();
     }
-    snake.x += grid;
+    cursor.x += grid;
   }
   // down arrow key
   else if (key === 40) {
     if (isShift) {
         saveBlock();
     }
-    snake.y += grid;
+    cursor.y += grid;
   }
 });
 
