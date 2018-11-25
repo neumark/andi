@@ -20,16 +20,31 @@
   </style>
 </head>
 <body>
-<canvas width="400" height="400" id="game"></canvas>
+<canvas width="600" height="600" id="game"></canvas>
+<script src="https://www.gstatic.com/firebasejs/5.5.9/firebase.js"></script>
 <script>
+  // Initialize Firebase
+  // firebase docs: https://firebase.google.com/docs/firestore/manage-data/transactions
+  var config = {
+    apiKey: "AIzaSyBBpyrRObSfwSQxX39vEFk3KLieKB1Ba_o",
+    authDomain: "rajzolos-11b35.firebaseapp.com",
+    databaseURL: "https://rajzolos-11b35.firebaseio.com",
+    projectId: "rajzolos-11b35",
+    storageBucket: "",
+    messagingSenderId: "492417192307"
+  };
+  firebase.initializeApp(config);
+</script>
+<script>
+var drawingId = null;
 var canvas = document.getElementById('game');
 var context = canvas.getContext('2d');
 
 var grid = 16;
   
 var cursor = {
-  x: 160,
-  y: 160
+  x: 10,
+  y: 10
 };
 
 var blocks = {};
@@ -49,15 +64,15 @@ function setBlock(x, y, color) {
 
 function drawPixel(x, y, color) {
   context.fillStyle = color;
-  context.fillRect(x, y, grid-1, grid-1);  
+  context.fillRect(x*grid, y*grid, grid-1, grid-1);  
 
 }
 
 // game loop
 function loop() {
   requestAnimationFrame(loop);
-  cursor.x = Math.max(0, Math.min(cursor.x, canvas.width - grid));
-  cursor.y = Math.max(0, Math.min(cursor.y, canvas.height - grid));
+  cursor.x = Math.max(0, Math.min(cursor.x, canvas.width / grid - 1));
+  cursor.y = Math.max(0, Math.min(cursor.y, canvas.height / grid - 1));
   context.clearRect(0,0,canvas.width,canvas.height);
   Object.keys(blocks).forEach(
 	  x => Object.keys(blocks[x]).forEach(
@@ -92,33 +107,73 @@ document.addEventListener('keydown', function(e) {
     if (isShift) {
       setBlock(cursor.x, cursor.y, 'yellow');
     }
-    cursor.x -= grid;
+    cursor.x--;
   }
   // up arrow key
   else if (key === 38) {
     if (isShift) {
       setBlock(cursor.x, cursor.y, 'yellow');
     }
-    cursor.y -= grid;
+    cursor.y--;
   }
   // right arrow key
   else if (key === 39) {
     if (isShift) {
       setBlock(cursor.x, cursor.y, 'yellow');
     }
-    cursor.x += grid;
+    cursor.x++;
   }
   // down arrow key
   else if (key === 40) {
     if (isShift) {
       setBlock(cursor.x, cursor.y, 'yellow');
     }
-    cursor.y += grid;
+    cursor.y++;
   }
 });
 
-// start the game
-requestAnimationFrame(loop);
+
+function loadDrawing() {
+firestore.collection("drawings").doc(drawingId).get().then(function(doc) {
+    if (doc.exists) {
+        console.log("Document data:", doc.data());
+	blocks = doc.data()['blocks']
+    } else {
+        // doc.data() will be undefined in this case
+        console.log("No such document!");
+    }
+}).catch(function(error) {
+    console.log("Error getting document:", error);
+});
+}
+
+// from: https://github.com/FirebaseExtended/firepad/blob/master/examples/code.html
+// Helper to get hash from end of URL or generate a random one.
+    function getExampleRef() {
+      var ref = firebase.database().ref();
+      var hash = window.location.hash.replace(/#/g, '');
+      if (hash) {
+        ref = ref.child(hash);
+      } else {
+        ref = ref.push(); // generate unique location.
+        window.location = window.location + '#' + ref.key; // add it as a hash to the URL.
+      }
+      if (typeof console !== 'undefined') {
+        console.log('Firebase data: ', ref.toString());
+      }
+      return ref.key;
+    }
+
+// main
+drawingId = getExampleRef();
+const firestore = firebase.firestore();
+const settings = {/* your settings... */ timestampsInSnapshots: true};
+firestore.settings(settings);
+firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(function(result) {
+  loadDrawing();
+  requestAnimationFrame(loop);
+});
+
 </script>
 </body>
 </html>
