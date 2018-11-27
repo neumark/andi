@@ -39,7 +39,7 @@
 var drawingId = null;
 var canvas = document.getElementById('game');
 var context = canvas.getContext('2d');
-
+var requireRepaint = true;
 var grid = 16;
   
 var cursor = {
@@ -48,6 +48,17 @@ var cursor = {
 };
 
 var blocks = {};
+
+function updateBlocks(newBlocks) {
+  requireRepaint = true;
+  blocks = newBlocks
+}
+
+function move(x, y) {
+  requireRepaint = true;
+  cursor.x = Math.max(0, Math.min(cursor.x + x, Math.floor(canvas.width / grid - 1)));
+  cursor.y = Math.max(0, Math.min(cursor.y + y, Math.floor(canvas.height / grid - 1)));
+}
 
 function xorBlock(x, y, color) {
   setBlock(x, y, getBlock(x, y) != null ? null : color);
@@ -58,29 +69,35 @@ function getBlock(x, y) {
 }
 
 function setBlock(x, y, color) {
+  requireRepaint = true;
   blocks[x] = (blocks[x] || {});
   blocks[x][y] = color;
+  firestore.collection("drawings").doc(drawingId).set({"blocks": blocks})
 }
 
 function drawPixel(x, y, color) {
   context.fillStyle = color;
   context.fillRect(x*grid, y*grid, grid-1, grid-1);  
+}
 
+function forEachBlock(fn) {
+  Object.keys(blocks).forEach(
+	  x => Object.keys(blocks[x]).forEach(
+		  y => {
+            var color = blocks[x][y];
+			if (color) {
+				fn(parseInt(x, 10), parseInt(y, 10), color);
+			}
+		  }));
 }
 
 // game loop
 function loop() {
   requestAnimationFrame(loop);
-  cursor.x = Math.max(0, Math.min(cursor.x, canvas.width / grid - 1));
-  cursor.y = Math.max(0, Math.min(cursor.y, canvas.height / grid - 1));
+  if (!requireRepaint) return;
+  requireRepaint = false;
   context.clearRect(0,0,canvas.width,canvas.height);
-  Object.keys(blocks).forEach(
-	  x => Object.keys(blocks[x]).forEach(
-		  y => {
-			if (blocks[x][y]) {
-				drawPixel(x, y, blocks[x][y]);
-			}
-		  }));
+  forEachBlock(drawPixel);
   drawPixel(cursor.x, cursor.y, 'green');  
 }
 
@@ -107,28 +124,28 @@ document.addEventListener('keydown', function(e) {
     if (isShift) {
       setBlock(cursor.x, cursor.y, 'yellow');
     }
-    cursor.x--;
+    move(-1, 0);
   }
   // up arrow key
   else if (key === 38) {
     if (isShift) {
       setBlock(cursor.x, cursor.y, 'yellow');
     }
-    cursor.y--;
+    move(0, -1);
   }
   // right arrow key
   else if (key === 39) {
     if (isShift) {
       setBlock(cursor.x, cursor.y, 'yellow');
     }
-    cursor.x++;
+    move(1, 0);
   }
   // down arrow key
   else if (key === 40) {
     if (isShift) {
       setBlock(cursor.x, cursor.y, 'yellow');
     }
-    cursor.y++;
+    move(0, 1);
   }
 });
 
@@ -137,7 +154,7 @@ function loadDrawing() {
 firestore.collection("drawings").doc(drawingId).get().then(function(doc) {
     if (doc.exists) {
         console.log("Document data:", doc.data());
-	blocks = doc.data()['blocks']
+	    updateBlocks(doc.data()['blocks'])
     } else {
         // doc.data() will be undefined in this case
         console.log("No such document!");
@@ -164,6 +181,12 @@ firestore.collection("drawings").doc(drawingId).get().then(function(doc) {
       return ref.key;
     }
 
+function registerListener() {
+        firestore.collection("drawings").doc(drawingId).onSnapshot(function(doc) {
+            updateBlocks(doc.data()['blocks']);
+        });
+}
+
 // main
 drawingId = getExampleRef();
 const firestore = firebase.firestore();
@@ -171,6 +194,7 @@ const settings = {/* your settings... */ timestampsInSnapshots: true};
 firestore.settings(settings);
 firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(function(result) {
   loadDrawing();
+  registerListener();
   requestAnimationFrame(loop);
 });
 
