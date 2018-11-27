@@ -34,12 +34,12 @@
 <h1>Let's draw together!</h1>
 Hold down SHIFT to set / unset a cell in the grid.<br />Share the URL with someone to collaborate with them. <br />
 <button onclick="main();">Start</button>
-<p>
-<a href="/">or create a new drawing</a>
-</p>
 </div>
 <div id="canvas_container">
 <canvas width="600" height="600" id="game"></canvas>
+<p>
+<a href="/">create a new drawing</a>
+</p>
 </div>
 <script>
   // Initialize Firebase
@@ -68,9 +68,16 @@ var cursor = {
 
 var blocks = {};
 
-function updateBlocks(newBlocks) {
-  requireRepaint = true;
-  blocks = newBlocks
+function updateBlocks(doc) {
+    if (doc.exists) {
+        if (doc.data() && doc.data()['blocks']) {
+            requireRepaint = true;
+            blocks = doc.data()['blocks']
+        }
+    } else {
+        // doc.data() will be undefined in this case
+        console.log("No such document!");
+    }
 }
 
 function move(x, y) {
@@ -108,7 +115,7 @@ function drawPixel(x, y, color) {
 }
 
 function forEachBlock(fn) {
-  Object.keys(blocks).forEach(
+    Object.keys(blocks).forEach(
 	  coords =>  {
             [x, y] = decodeCoordinates(coords);
             var color = getBlock(x, y);
@@ -178,15 +185,7 @@ document.addEventListener('keydown', function(e) {
 
 
 function loadDrawing() {
-firestore.collection("drawings").doc(drawingId).get().then(function(doc) {
-    if (doc.exists) {
-        console.log("Document data:", doc.data());
-	    updateBlocks(doc.data()['blocks'])
-    } else {
-        // doc.data() will be undefined in this case
-        console.log("No such document!");
-    }
-}).catch(function(error) {
+firestore.collection("drawings").doc(drawingId).get().then(updateBlocks).catch(function(error) {
     console.log("Error getting document:", error);
 });
 }
@@ -209,9 +208,7 @@ firestore.collection("drawings").doc(drawingId).get().then(function(doc) {
     }
 
 function registerListener() {
-        firestore.collection("drawings").doc(drawingId).onSnapshot(function(doc) {
-            updateBlocks((doc.data() || {})['blocks']);
-        });
+        firestore.collection("drawings").doc(drawingId).onSnapshot(updateBlocks);
 }
 
 function main() {
@@ -220,10 +217,11 @@ function main() {
     drawingId = getExampleRef();
     const settings = {/* your settings... */ timestampsInSnapshots: true};
     firestore.settings(settings);
-    firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(function(result) {
-      loadDrawing();
-      registerListener();
-      requestAnimationFrame(loop);
+        firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(function(result) {
+        localStorage.setItem('user', JSON.stringify(firebase.auth().currentUser))
+        loadDrawing();
+        registerListener();
+        requestAnimationFrame(loop);
     });
 }
 
