@@ -55,7 +55,6 @@ Hold down SHIFT to set / unset a cell in the grid.<br />Share the URL with someo
   firebase.initializeApp(config);
 </script>
 <script>
-let drawingId = null;
 let firebaseDoc = null;
 const canvas = document.getElementById('game');
 const context = canvas.getContext('2d');
@@ -77,7 +76,8 @@ function updateBlocks(doc) {
         }
     } else {
         // doc.data() will be undefined in this case
-        console.log("No such document!");
+        console.log("No such document, creating new doc!");
+        firebaseDoc.set({});
     }
 }
 
@@ -215,14 +215,19 @@ function registerListener() {
         firebaseDoc.onSnapshot(updateBlocks);
 }
 
+function openDrawing(drawingId) {
+    const doc = firestore.collection("drawings").doc(drawingId);
+    return doc;
+}
+
 function main() {
     $('#instructions').hide();
     $('#canvas_container').show();
-    drawingId = getExampleRef();
+    const drawingId = getExampleRef();
     const settings = {/* your settings... */ timestampsInSnapshots: true};
     firestore.settings(settings);
         firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(function(result) {
-        firebaseDoc = firestore.collection("drawings").doc(drawingId)
+        firebaseDoc = openDrawing(drawingId);
         loadDrawing();
         registerListener();
         requestAnimationFrame(loop);
