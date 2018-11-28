@@ -56,6 +56,7 @@ Hold down SHIFT to set / unset a cell in the grid.<br />Share the URL with someo
 </script>
 <script>
 let drawingId = null;
+let firebaseDoc = null;
 const canvas = document.getElementById('game');
 const context = canvas.getContext('2d');
 let requireRepaint = true;
@@ -105,8 +106,11 @@ function getBlock(x, y) {
 
 function setBlock(x, y, color) {
   requireRepaint = true;
-  blocks[encodeCoordinates(x,y)] = color;
-  firestore.collection("drawings").doc(drawingId).set({"blocks": blocks})
+  var coords = encodeCoordinates(x,y);
+  blocks[coords] = color;
+  var update = {};
+  update[`blocks.${coords}`] = color;
+  firebaseDoc.update(update);
 }
 
 function drawPixel(x, y, color) {
@@ -185,7 +189,7 @@ document.addEventListener('keydown', function(e) {
 
 
 function loadDrawing() {
-firestore.collection("drawings").doc(drawingId).get().then(updateBlocks).catch(function(error) {
+    firebaseDoc.get().then(updateBlocks).catch(function(error) {
     console.log("Error getting document:", error);
 });
 }
@@ -208,7 +212,7 @@ firestore.collection("drawings").doc(drawingId).get().then(updateBlocks).catch(f
     }
 
 function registerListener() {
-        firestore.collection("drawings").doc(drawingId).onSnapshot(updateBlocks);
+        firebaseDoc.onSnapshot(updateBlocks);
 }
 
 function main() {
@@ -218,7 +222,7 @@ function main() {
     const settings = {/* your settings... */ timestampsInSnapshots: true};
     firestore.settings(settings);
         firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(function(result) {
-        localStorage.setItem('user', JSON.stringify(firebase.auth().currentUser))
+        firebaseDoc = firestore.collection("drawings").doc(drawingId)
         loadDrawing();
         registerListener();
         requestAnimationFrame(loop);
